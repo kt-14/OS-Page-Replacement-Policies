@@ -4,244 +4,194 @@ root = tk.Tk()
 root.geometry("500x400")
 root.title("Page Replacement Policies")
 
-def fifo_algorithm(num_pages, pages, num_frames, root):
+def create_labels(window, num_pages, page_faults, hits):
+    hit_ratio = hits / num_pages
+    miss_ratio = 1 - hit_ratio
+    page_fault_label = tk.Label(window, text=f"Page Faults: {page_faults}", font="bold", fg="white", bg="black")
+    hit_label = tk.Label(window, text=f"Total Hits: {hits}", font="bold", fg="white", bg="black")
+    hit_ratio_label = tk.Label(window, text=f"Hit Ratio: {hit_ratio:.2f}", font="bold", fg="white", bg="black")
+    miss_ratio_label = tk.Label(window, text=f"Miss Ratio: {miss_ratio:.2f}", font="bold", fg="white", bg="black")
+    page_fault_label.grid(row=1, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
+    hit_label.grid(row=2, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
+    hit_ratio_label.grid(row=3, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
+    miss_ratio_label.grid(row=4, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
+
+def fifo_algorithm(num_pages, reference_string, num_frames, window):
     frames = [-1] * num_frames
     page_faults = 0
     hits = 0
     frame_pointer = 0
-    root.title("FIFO Algorithm")
-    root.configure(background="black")
+    window.title("FIFO Algorithm")
+    window.configure(background="black")
 
     for i in range(num_pages):
-        page = pages[i]
-        label = tk.Label(root, text=f"{pages[i]}", font="bold", bd=2, fg="white", bg="black", relief=tk.SOLID)
-        label.grid(row=6, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
+        current_page = reference_string[i]
+        page_label = tk.Label(window, text=f"{current_page}", font="bold", bd=2, fg="white", bg="black", relief=tk.SOLID)
+        page_label.grid(row=6, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
         page_found = False
 
-        # Check if page is already in memory
         for j in range(num_frames):
-            if frames[j] == page:
+            if frames[j] == current_page:
                 page_found = True
                 hits += 1
                 break
 
-        # If page is not in memory, replace oldest page with new page
         if not page_found:
-            frames[frame_pointer] = page
+            frames[frame_pointer] = current_page
             frame_pointer = (frame_pointer + 1) % num_frames
             page_faults += 1
 
-        # Print current state of frames
         for j in range(num_frames):
             if frames[j] == -1:
-                if not page_found:
-                    # page fault
-                    label = tk.Label(root, text="  ", font="bold", bd=2, bg="#ff0000", relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
-                else:
-                    label = tk.Label(root, text="  ", font="bold", bg="#00cc00", bd=2, relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
+                color = "#ff0000" if not page_found else "#00cc00"
+                label = tk.Label(window, text="  ", font="bold", bd=2, bg=color, relief=tk.SOLID)
+                label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
             else:
-                if not page_found:
-                    label = tk.Label(root, text="%d" % frames[j], font="bold", bd=2, bg="#ff0000", relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
-                else:
-                    label = tk.Label(root, text="%d" % frames[j], font="bold", bg="#00cc00", bd=2, relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
-    print("FIFO Algorithm : ")
+                color = "#ff0000" if not page_found else "#00cc00"
+                label = tk.Label(window, text="%d" % frames[j], font="bold", bd=2, bg=color, relief=tk.SOLID)
+                label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
+    
+    print("FIFO Algorithm:")
     print("\nPage Faults: ", page_faults)
-    print("\nTotal Hits : ", hits)
-    hit_ratio = hits / num_pages
-    miss_ratio = 1 - hit_ratio
-    page_fault_label = tk.Label(root, text=f"Page Faults: {page_faults}", font="bold", fg="white", bg="black")
-    hit_label = tk.Label(root, text=f"Total Hits: {hits}", font="bold", fg="white", bg="black")
-    hit_ratio_label = tk.Label(root, text=f"Hit Ratio: {hit_ratio:.2f}", font="bold", fg="white", bg="black")
-    miss_ratio_label = tk.Label(root, text=f"Miss Ratio: {miss_ratio:.2f}", font="bold", fg="white", bg="black")
-    page_fault_label.grid(row=1, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
-    hit_label.grid(row=2, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
-    hit_ratio_label.grid(row=3, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
-    miss_ratio_label.grid(row=4, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
+    print("\nTotal Hits: ", hits)
+    create_labels(window, num_pages, page_faults, hits)
 
-def lru_algorithm(num_pages, pages, num_frames, root):
+def lru_algorithm(num_pages, reference_string, num_frames, window):
     frames = [-1] * num_frames
     page_faults = 0
     hits = 0
-    used = [0] * num_frames
-    root.title("LRU Algorithm")
-    root.configure(background="black")
+    usage_order = [0] * num_frames
+    window.title("LRU Algorithm")
+    window.configure(background="black")
 
     for i in range(num_pages):
-        page = pages[i]
-        label = tk.Label(root, text=f"{pages[i]}", font="bold", bd=2, fg="white", bg="black", relief=tk.SOLID)
-        label.grid(row=6, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
+        current_page = reference_string[i]
+        page_label = tk.Label(window, text=f"{current_page}", font="bold", bd=2, fg="white", bg="black", relief=tk.SOLID)
+        page_label.grid(row=6, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
         page_found = False
 
-        # Check if page is already in memory
         for j in range(num_frames):
-            if frames[j] == page:
+            if frames[j] == current_page:
                 page_found = True
                 hits += 1
-                used[j] = i
+                usage_order[j] = i
                 break
 
-        # If page is not in memory, find least recently used page to replace
         if not page_found:
-            # If there is an empty frame, use it
             if -1 in frames:
                 frame_to_replace = frames.index(-1)
             else:
-                # Otherwise, find least recently used frame to replace
-                frame_to_replace = used.index(min(used))
-            frames[frame_to_replace] = page
-            used[frame_to_replace] = i
+                frame_to_replace = usage_order.index(min(usage_order))
+            frames[frame_to_replace] = current_page
+            usage_order[frame_to_replace] = i
             page_faults += 1
 
-        # Print current state of frames
         for j in range(num_frames):
             if frames[j] == -1:
-                if not page_found:
-                    label = tk.Label(root, text="  ", font="bold", bd=2, bg="#ff0000", relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
-                else:
-                    label = tk.Label(root, text="  ", font="bold", bg="#00cc00", bd=2, relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
+                color = "#ff0000" if not page_found else "#00cc00"
+                label = tk.Label(window, text="  ", font="bold", bd=2, bg=color, relief=tk.SOLID)
+                label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
             else:
-                if not page_found:
-                    label = tk.Label(root, text="%d" % frames[j], font="bold", bd=2, bg="#ff0000", relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
-                else:
-                    label = tk.Label(root, text="%d" % frames[j], font="bold", bg="#00cc00", bd=2, relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
-    print("LRU Algorithm : ")
+                color = "#ff0000" if not page_found else "#00cc00"
+                label = tk.Label(window, text="%d" % frames[j], font="bold", bd=2, bg=color, relief=tk.SOLID)
+                label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
+    
+    print("LRU Algorithm:")
     print("\nPage Faults: ", page_faults)
-    print("\nTotal Hits : ", hits)
-    hit_ratio = hits / num_pages
-    miss_ratio = 1 - hit_ratio
-    page_fault_label = tk.Label(root, text=f"Page Faults: {page_faults}", font="bold", fg="white", bg="black")
-    hit_label = tk.Label(root, text=f"Total Hits: {hits}", font="bold", fg="white", bg="black")
-    hit_ratio_label = tk.Label(root, text=f"Hit Ratio: {hit_ratio:.2f}", font="bold", fg="white", bg="black")
-    miss_ratio_label = tk.Label(root, text=f"Miss Ratio: {miss_ratio:.2f}", font="bold", fg="white", bg="black")
-    page_fault_label.grid(row=1, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
-    hit_label.grid(row=2, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
-    hit_ratio_label.grid(row=3, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
-    miss_ratio_label.grid(row=4, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
+    print("\nTotal Hits: ", hits)
+    create_labels(window, num_pages, page_faults, hits)
 
-def optimal_algorithm(num_pages, pages, num_frames, root):
+def optimal_algorithm(num_pages, reference_string, num_frames, window):
     frames = [-1] * num_frames
     page_faults = 0
     hits = 0
-    root.title("Optimal Algorithm")
-    root.configure(background="black")
+    window.title("Optimal Algorithm")
+    window.configure(background="black")
 
     for i in range(num_pages):
-        page = pages[i]
-        label = tk.Label(root, text=f"{pages[i]}", font="bold", bd=2, fg="white", bg="black", relief=tk.SOLID)
-        label.grid(row=6, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
+        current_page = reference_string[i]
+        page_label = tk.Label(window, text=f"{current_page}", font="bold", bd=2, fg="white", bg="black", relief=tk.SOLID)
+        page_label.grid(row=6, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
         page_found = False
 
-        # Check if page is already in memory
-        if page in frames:
+        if current_page in frames:
             page_found = True
             hits += 1
         else:
-            # If there is an empty frame, use it
             if -1 in frames:
                 frame_to_replace = frames.index(-1)
             else:
-                # Find the page with the longest future distance
-                future_distances = [pages[i+1:].index(frames[j]) if frames[j] in pages[i+1:] else num_pages for j in range(num_frames)]
-                frame_to_replace = future_distances.index(max(future_distances))
-            frames[frame_to_replace] = page
+                future_indices = [reference_string[i+1:].index(frames[j]) if frames[j] in reference_string[i+1:] else num_pages for j in range(num_frames)]
+                frame_to_replace = future_indices.index(max(future_indices))
+            frames[frame_to_replace] = current_page
             page_faults += 1
 
-        # Print current state of frames
         for j in range(num_frames):
             if frames[j] == -1:
-                if not page_found:
-                    label = tk.Label(root, text="  ", font="bold", bd=2, bg="#ff0000", relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
-                else:
-                    label = tk.Label(root, text="  ", font="bold", bg="#00cc00", bd=2, relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
+                color = "#ff0000" if not page_found else "#00cc00"
+                label = tk.Label(window, text="  ", font="bold", bd=2, bg=color, relief=tk.SOLID)
+                label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
             else:
-                if not page_found:
-                    label = tk.Label(root, text="%d" % frames[j], font="bold", bd=2, bg="#ff0000", relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
-                else:
-                    label = tk.Label(root, text="%d" % frames[j], font="bold", bg="#00cc00", bd=2, relief=tk.SOLID)
-                    label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
-    print("Optimal Algorithm : ")
+                color = "#ff0000" if not page_found else "#00cc00"
+                label = tk.Label(window, text="%d" % frames[j], font="bold", bd=2, bg=color, relief=tk.SOLID)
+                label.grid(row=7+j, column=1+i, ipadx=20, ipady=10, sticky=tk.W)
+    
+    print("Optimal Algorithm:")
     print("\nPage Faults: ", page_faults)
-    print("\nTotal Hits : ", hits)
-    hit_ratio = hits / num_pages
-    miss_ratio = 1 - hit_ratio
-    page_fault_label = tk.Label(root, text=f"Page Faults: {page_faults}", font="bold", fg="white", bg="black")
-    hit_label = tk.Label(root, text=f"Total Hits: {hits}", font="bold", fg="white", bg="black")
-    hit_ratio_label = tk.Label(root, text=f"Hit Ratio: {hit_ratio:.2f}", font="bold", fg="white", bg="black")
-    miss_ratio_label = tk.Label(root, text=f"Miss Ratio: {miss_ratio:.2f}", font="bold", fg="white", bg="black")
-    page_fault_label.grid(row=1, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
-    hit_label.grid(row=2, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
-    hit_ratio_label.grid(row=3, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
-    miss_ratio_label.grid(row=4, column=1, columnspan=num_pages, padx=5, pady=5, sticky=tk.W)
+    print("\nTotal Hits: ", hits)
+    create_labels(window, num_pages, page_faults, hits)
 
-def visualize():
-    win = tk.Tk()
-    pages = [int(x) for x in pages_entry.get().split()]
+def visualize_fifo():
+    window = tk.Tk()
+    reference_string = [int(x) for x in pages_entry.get().split()]
     num_frames = int(num_frames_entry.get())
-    num_pages = len(pages)
-    print("Reference string : ", pages, "\nFrames : ", num_frames)
+    num_pages = len(reference_string)
+    print("Reference string: ", reference_string, "\nFrames: ", num_frames)
 
-    fifo_algorithm(num_pages, pages, num_frames, win)
+    fifo_algorithm(num_pages, reference_string, num_frames, window)
 
 def visualize_lru():
-    win = tk.Tk()
-    pages = [int(x) for x in pages_entry.get().split()]
+    window = tk.Tk()
+    reference_string = [int(x) for x in pages_entry.get().split()]
     num_frames = int(num_frames_entry.get())
-    num_pages = len(pages)
-    print("Reference string : ", pages, "\nFrames : ", num_frames)
+    num_pages = len(reference_string)
+    print("Reference string: ", reference_string, "\nFrames: ", num_frames)
 
-    lru_algorithm(num_pages, pages, num_frames, win)
+    lru_algorithm(num_pages, reference_string, num_frames, window)
 
 def visualize_optimal():
-    win = tk.Tk()
-    pages = [int(x) for x in pages_entry.get().split()]
+    window = tk.Tk()
+    reference_string = [int(x) for x in pages_entry.get().split()]
     num_frames = int(num_frames_entry.get())
-    num_pages = len(pages)
-    print("Reference string : ", pages, "\nFrames : ", num_frames)
+    num_pages = len(reference_string)
+    print("Reference string: ", reference_string, "\nFrames: ", num_frames)
 
-    optimal_algorithm(num_pages, pages, num_frames, win)
+    optimal_algorithm(num_pages, reference_string, num_frames, window)
 
 def clear_inputs():
     pages_entry.delete(0, tk.END)
     num_frames_entry.delete(0, tk.END)
 
 # Create input labels and entry widgets
-pages_label = tk.Label(root, text="Reference String :")
+pages_label = tk.Label(root, text="Reference String:")
 pages_entry = tk.Entry(root)
-num_frames_label = tk.Label(root, text="Number of Frames :")
+num_frames_label = tk.Label(root, text="Number of Frames:")
 num_frames_entry = tk.Entry(root)
 
 # Create Buttons
-visualize_button = tk.Button(root, text="Visualize FIFO", command=visualize)
+visualize_fifo_button = tk.Button(root, text="Visualize FIFO", command=visualize_fifo)
 visualize_lru_button = tk.Button(root, text="Visualize LRU", command=visualize_lru)
 visualize_optimal_button = tk.Button(root, text="Visualize Optimal", command=visualize_optimal)
-clear_button = tk.Button(root, text="Clear Input", command=clear_inputs)
+clear_button = tk.Button(root, text="Clear", command=clear_inputs)
 
-# Grid layout for input widgets
-pages_label.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
-pages_entry.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
-num_frames_label.grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
-num_frames_entry.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
-
-# Grid layout for visualize button
-visualize_button.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
-visualize_lru_button.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
-visualize_optimal_button.grid(row=6, column=0, columnspan=2, padx=5, pady=5)
-clear_button.grid(row=7, column=0, columnspan=2, padx=5, pady=5)
-
-exp_lbl = tk.Label(root, text="Example Reference String : 1 4 5 1 7 8 3 4 2 1 6 7").grid(row=8, column=0, padx=5, pady=5, sticky=tk.W)
-exp_lbl2 = tk.Label(root, text="Example Number of Frames : 4").grid(row=9, column=0, padx=5, pady=5, sticky=tk.W)
-tk.Label(root, text="Green Represents: Hit").grid(row=10, column=0, padx=5, pady=5, sticky=tk.W)
-tk.Label(root, text="Red Represents  : Page Fault").grid(row=11, column=0, padx=5, pady=5, sticky=tk.W)
+# Layout the widgets
+pages_label.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
+pages_entry.grid(row=0, column=1, padx=10, pady=10)
+num_frames_label.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
+num_frames_entry.grid(row=1, column=1, padx=10, pady=10)
+visualize_fifo_button.grid(row=2, column=0, padx=10, pady=10)
+visualize_lru_button.grid(row=2, column=1, padx=10, pady=10)
+visualize_optimal_button.grid(row=3, column=0, padx=10, pady=10)
+clear_button.grid(row=3, column=1, padx=10, pady=10)
 
 root.mainloop()
